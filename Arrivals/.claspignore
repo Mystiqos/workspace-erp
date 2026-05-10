@@ -1,0 +1,8 @@
+# GitHub-only files.
+config.example.js
+
+# Local clasp bindings.
+.clasp*.json
+
+# Local system files.
+.DS_Store
