@@ -10,6 +10,16 @@
 //   GENERAL_SATISFACTION_EXCLUDED_PROJECTS: [
 //     'put-project-name-here'
 //   ],
+//   FINANCE_BASEMENT_PL_ALLOWED_ROLES: [
+//     'QA',
+//     'AQA',
+//     'DEV',
+//     'BETA',
+//     'OPR',
+//     'ENG',
+//     'EMP'
+//   ],
+//   FINANCE_BASEMENT_PL_DEFAULT_ROLE: 'EMP',
 //   COWORKING_INTEGRATIONS: [
 //     {
 //       formValue: 'put-coworking-form-value-here',

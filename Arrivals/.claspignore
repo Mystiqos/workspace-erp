@@ -1,5 +1,6 @@
 # GitHub-only files.
 config.example.js
+README.md
 
 # Local clasp bindings.
 .clasp*.json

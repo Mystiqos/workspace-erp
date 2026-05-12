@@ -62,9 +62,8 @@ function onFormSubmit(e) {
         49: timestamp,
         50: values['Email Address']
       });
-      ensureCheckboxInRow(sheet, lastRow, 3);
-
       format4LastRow(sheet, lastRow);
+      ensureCheckboxAfterFormulaUpdate(sheet, lastRow, 3);
 
     } catch (err) {
       recordProcessingError(processingErrors, "WorkForce", err);
@@ -336,7 +335,7 @@ function onFormSubmit(e) {
           1: personID,
           2: `${values['First Name'] || ''} ${values['Last Name'] || ''}`.trim(),
           3: 'new',
-          4: values['Role'],
+          4: getFinanceBasementRole(values['Role']),
           6: values['Start Date'],
           14: values['GROSS'],
           24: 0,
@@ -366,7 +365,12 @@ function onFormSubmit(e) {
       rate          = (isFinite(gross) && monthlyHours)
                       ? Math.ceil((gross / monthlyHours) * 100) / 100
                       : 'n/a';
-      setRowValues(sheet, lastRow, {
+      const agreementCurrency = getValidCurrency(values['Currency']);
+      if (!agreementCurrency) {
+        recordProcessingError(processingErrors, "Agreements currency", new Error("Currency is missing or invalid."));
+      }
+
+      const agreementValues = {
         1: personID,
         2: 'in progress',
         3: `${values['First Name'] || ''} ${values['Last Name'] || ''}`.trim(),
@@ -377,12 +381,17 @@ function onFormSubmit(e) {
         11: startDate,
         18: values['GROSS'],
         19: rate,
-        26: 'Currency',
         42: 'Full Name by Local Passport',
         54: 'Official Address',
         56: 'Individual Tax #',
         62: 'Private Email'
-      });
+      };
+
+      if (agreementCurrency) {
+        agreementValues[26] = agreementCurrency;
+      }
+
+      setRowValues(sheet, lastRow, agreementValues);
    
       format4LastRow(sheet, lastRow);
 
@@ -453,10 +462,9 @@ function onFormSubmit(e) {
         sheet = spreadsheet.getSheetByName('Coworkers');
         removeFiltersIfAny(sheet);
 
-        // Find the row with "Total" in column C.
-        const colCValues = sheet.getRange(1, 3, sheet.getLastRow()).getValues().flat();
-        const totalRowIndex = colCValues.findIndex(v => String(v).trim().toLowerCase() === 'total') + 1;
-        if (totalRowIndex === 0) throw new Error(`Row with 'Total' in column C not found`);
+        // Find the row with "Total" in columns A:F.
+        const totalRowIndex = findRowContainingText(sheet, 'Total', 1, 6);
+        if (totalRowIndex === 0) throw new Error(`Row with 'Total' in columns A:F not found`);
 
         // Insert the new coworker row before the total row.
         sheet.insertRowBefore(totalRowIndex);
@@ -633,6 +641,57 @@ function getGeneralSatisfactionExcludedProjects() {
 function getCoworkingIntegration(formValue) {
   const integrations = CONFIG.COWORKING_INTEGRATIONS || [];
   return integrations.find(integration => integration.formValue === formValue) || null;
+}
+
+/**
+ * Gets a single valid currency code from a form value.
+ *
+ * @param {string} value Currency value submitted from the form.
+ * @return {string} Valid currency code, or an empty string when missing or invalid.
+ */
+function getValidCurrency(value) {
+  const allowedCurrencies = ['USD', 'EUR', 'PLN', 'UAH'];
+  const currency = String(value || '').trim().toUpperCase();
+  return allowedCurrencies.includes(currency) ? currency : '';
+}
+
+/**
+ * Gets a valid role code for the Finance Basement sheet.
+ *
+ * @param {string} role Role submitted from the form.
+ * @return {string} Valid finance role code.
+ */
+function getFinanceBasementRole(role) {
+  const allowedRoles = CONFIG.FINANCE_BASEMENT_PL_ALLOWED_ROLES || ['QA', 'AQA', 'DEV', 'BETA', 'OPR', 'ENG', 'EMP'];
+  const defaultRole = CONFIG.FINANCE_BASEMENT_PL_DEFAULT_ROLE || 'EMP';
+  const normalizedRole = String(role || '').trim().toUpperCase();
+
+  return allowedRoles.includes(normalizedRole) ? normalizedRole : defaultRole;
+}
+
+/**
+ * Finds the first row that contains the given text in a column range.
+ *
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet Sheet to search.
+ * @param {string} text Text to find.
+ * @param {number} startColumn One-based first column in the search range.
+ * @param {number} endColumn One-based last column in the search range.
+ * @return {number} Matching one-based row number, or 0 when not found.
+ */
+function findRowContainingText(sheet, text, startColumn, endColumn) {
+  const lastRow = sheet.getLastRow();
+  if (!lastRow) return 0;
+
+  const columnCount = endColumn - startColumn + 1;
+  const searchText = String(text).trim().toLowerCase();
+  const values = sheet.getRange(1, startColumn, lastRow, columnCount).getValues();
+
+  for (let rowIndex = 0; rowIndex < values.length; rowIndex++) {
+    const hasMatch = values[rowIndex].some(value => String(value).trim().toLowerCase() === searchText);
+    if (hasMatch) return rowIndex + 1;
+  }
+
+  return 0;
 }
 
 /**
@@ -850,14 +909,16 @@ function setRowValues(sheet, row, columnValues) {
 }
 
 /**
- * Applies checkbox data validation to a cell in the given row and column.
+ * Waits for sheet formulas to update and applies checkbox validation to a cell.
  *
  * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet Destination sheet.
  * @param {number} row Destination row number.
  * @param {number} column Destination column number.
  * @return {void}
  */
-function ensureCheckboxInRow(sheet, row, column) {
+function ensureCheckboxAfterFormulaUpdate(sheet, row, column) {
+  sheet.getRange(row, column).clearContent().clearDataValidations();
+  SpreadsheetApp.flush();
   const rule = SpreadsheetApp.newDataValidation()
     .requireCheckbox()
     .setAllowInvalid(true)
