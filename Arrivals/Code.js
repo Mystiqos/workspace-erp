@@ -1,3 +1,11 @@
+const HEADER_PROFILES = {
+  WORKFORCE: ['Person ID', 'First Name', 'Last Name', 'Start Date'],
+  FORCES_PROJECTS: ['Person ID', 'Force ID', 'Project', 'Role'],
+  FINANCE_BASEMENT_PL: ['Person ID', 'Role', 'Project Start Date', 'Offered'],
+  AGREEMENTS: ['Person ID', 'Status', 'Project', 'Document Currency'],
+  COWORKING_MEMBER_REGISTER: ['Person ID', 'Member Name']
+};
+
 /**
  * Handles a Google Form submission and distributes the submitted arrival data
  * to all connected workforce, finance, legal, tech, coworking, and notification targets.
@@ -26,42 +34,43 @@ function onFormSubmit(e) {
       spreadsheet = SpreadsheetApp.openById(CONFIG.WORKFORCE_SPREADSHEET_ID);
       sheet = spreadsheet.getSheetByName('Registry');
       removeFiltersIfAny(sheet);
-      lastRow = emptyRowsDel(sheet, 1);
+      const workforceHeaderProfile = HEADER_PROFILES.WORKFORCE;
+      lastRow = emptyRowsDel(sheet, 1, {headerProfile: workforceHeaderProfile});
 
-      setRowValues(sheet, lastRow, {
-        1: timestamp,
-        2: personID,
-        4: values['First Name'],
-        5: values['Last Name'],
-        6: values['Start Date'],
-        16: values['Telephone'],
-        17: values['2nd Telephone'],
-        18: values['Telegram'],
-        19: values['WhatsApp'],
-        20: values['Private Skype'],
-        21: values['Private Email'],
-        22: values['LinkedIn'],
-        23: values['Full Name by Local Passport'],
-        24: values['Gender'],
-        25: values['Birthday'],
-        26: '',
-        27: values['Emergency Contact'],
-        28: values['Present Location'],
-        33: values['Official Address'],
-        34: values['Coworking'],
-        35: values['Workplace Now'],
-        36: values['Workplace After'],
-        37: values['Office Attendance After'],
-        38: values['Tech Stacks'],
-        39: values['Insurance'],
-        40: values['Legal Processing'],
-        41: values['PE Support'],
-        42: values['CV'],
-        43: values['Recruiter'],
-        44: values['Researcher'],
-        49: timestamp,
-        50: values['Email Address']
-      });
+      const workforceValues = {};
+      const setWorkforceValue = createHeaderValueSetter(sheet, workforceValues, workforceHeaderProfile);
+      setWorkforceValue('Timestamp', timestamp, 1);
+      setWorkforceValue('Person ID', personID, 2);
+      setWorkforceValue('First Name', values['First Name'], 4);
+      setWorkforceValue('Last Name', values['Last Name'], 5);
+      setWorkforceValue('Start Date', values['Start Date'], 6);
+      setWorkforceValue('Telephone', values['Telephone'], 16);
+      setWorkforceValue('2nd Telephone', values['2nd Telephone'], 17);
+      setWorkforceValue('Telegram', values['Telegram'], 18);
+      setWorkforceValue('WhatsApp', values['WhatsApp'], 19);
+      setWorkforceValue('Private Skype', values['Private Skype'], 20);
+      setWorkforceValue('Private Email', values['Private Email'], 21);
+      setWorkforceValue('LinkedIn', values['LinkedIn'], 22);
+      setWorkforceValue('Full Name by Local Passport', values['Full Name by Local Passport'], 23);
+      setWorkforceValue('Gender', values['Gender'], 24);
+      setWorkforceValue('Birthday', values['Birthday'], 25);
+      setWorkforceValue('Emergency Contact', values['Emergency Contact'], 27);
+      setWorkforceValue('Start Location', values['Present Location'], 28);
+      setWorkforceValue('Official Address', values['Official Address'], 33);
+      setWorkforceValue('Coworking', values['Coworking'], 34);
+      setWorkforceValue('Workplace Now', values['Workplace Now'], 35);
+      setWorkforceValue('Workplace After', values['Workplace After'], 36);
+      setWorkforceValue('Office Attendance After', values['Office Attendance After'], 37);
+      setWorkforceValue('Tech Stacks', values['Tech Stacks'], 38);
+      setWorkforceValue('Insurance', values['Insurance'], 39);
+      setWorkforceValue('Legal Processing', values['Legal Processing'], 40);
+      setWorkforceValue('PE Support', values['PE Support'], 41);
+      setWorkforceValue('CV', values['CV'], 42);
+      setWorkforceValue('Recruiter', values['Recruiter'], 43);
+      setWorkforceValue('Researcher', values['Researcher'], 44);
+      setWorkforceValue('Last Modified', timestamp, 49);
+      setWorkforceValue('Modified By', values['Email Address'], 50);
+      setRowValues(sheet, lastRow, workforceValues);
       format4LastRow(sheet, lastRow);
       ensureCheckboxAfterFormulaUpdate(sheet, lastRow, 3);
 
@@ -74,23 +83,25 @@ function onFormSubmit(e) {
       spreadsheet = SpreadsheetApp.openById(CONFIG.FORCES_PROJECTS_SPREADSHEET_ID);
       sheet = spreadsheet.getSheetByName('AllData');
       removeFiltersIfAny(sheet);
-      lastRow = emptyRowsDel(sheet, 1);
+      const forceProjectsHeaderProfile = HEADER_PROFILES.FORCES_PROJECTS;
+      lastRow = emptyRowsDel(sheet, 1, {headerProfile: forceProjectsHeaderProfile});
 
-      setRowValues(sheet, lastRow, {
-        1: personID,
-        2: newForceID,
-        6: values['Project'],
-        7: values['Team'],
-        8: values['Role'],
-        9: values['Start Date'],
-        11: values['Capacity'],
-        12: values['Seniority'],
-        13: values['Project Email'],
-        14: values['Reporting Manager'],
-        15: values['Rep Manager\'s Email'],
-        16: values['Equipment'],
-        17: values['Schedule Specificity']
-      });
+      const forceProjectValues = {};
+      const setForceProjectValue = createHeaderValueSetter(sheet, forceProjectValues, forceProjectsHeaderProfile);
+      setForceProjectValue('Person ID', personID, 1);
+      setForceProjectValue('Force ID', newForceID, 2);
+      setForceProjectValue('Project', values['Project'], 6);
+      setForceProjectValue('Team', values['Team'], 7);
+      setForceProjectValue('Role', values['Role'], 8);
+      setForceProjectValue('Start Date', values['Start Date'], 9);
+      setForceProjectValue('Workload', values['Capacity'], 11);
+      setForceProjectValue('Seniority', values['Seniority'], 12);
+      setForceProjectValue('Project Mail', values['Project Email'], 13);
+      setForceProjectValue('Reporting Manager', values['Reporting Manager'], 14);
+      setForceProjectValue('Rep Manager\'s Email', values['Rep Manager\'s Email'], 15);
+      setForceProjectValue('Equipment', values['Equipment'], 16);
+      setForceProjectValue('Schedule Specifics', values['Schedule Specifics'], 17);
+      setRowValues(sheet, lastRow, forceProjectValues);
       sheet.getRange(lastRow, 3).clear();
       format4LastRow(sheet, lastRow);
 
@@ -260,6 +271,11 @@ function onFormSubmit(e) {
 
     /* ========================== FINANCE AND LEGAL DATA ========================== */
 
+    const projectEndDate = getProjectEndDate(values['Start Date'], values['Project Term']);
+    if (!projectEndDate) {
+      recordProcessingError(processingErrors, "Project end date", new Error("Project Term is missing or invalid."));
+    }
+
     try {
       // Forces-Legal.
       spreadsheet = SpreadsheetApp.openById(CONFIG.FORCES_LEGAL_SPREADSHEET_ID);
@@ -330,17 +346,21 @@ function onFormSubmit(e) {
         sheet = spreadsheet.getSheetByName('Finance');
         removeFiltersIfAny(sheet);
 
-        lastRow = emptyRowsDel(sheet, 1);
-        setRowValues(sheet, lastRow, {
-          1: personID,
-          2: `${values['First Name'] || ''} ${values['Last Name'] || ''}`.trim(),
-          3: 'new',
-          4: getFinanceBasementRole(values['Role']),
-          6: values['Start Date'],
-          14: values['GROSS'],
-          24: 0,
-          27: 0
-        });
+        const financeBasementHeaderProfile = HEADER_PROFILES.FINANCE_BASEMENT_PL;
+        lastRow = emptyRowsDel(sheet, 1, {headerProfile: financeBasementHeaderProfile});
+        const financeBasementValues = {};
+        const setFinanceBasementValue = createHeaderValueSetter(sheet, financeBasementValues, financeBasementHeaderProfile);
+        setFinanceBasementValue('Person ID', personID, 1);
+        setFinanceBasementValue('Name', `${values['First Name'] || ''} ${values['Last Name'] || ''}`.trim(), 2);
+        setFinanceBasementValue('Agreement', 'new', 3);
+        setFinanceBasementValue('Role', getFinanceBasementRole(values['Role']), 4);
+        setFinanceBasementValue('Project Start Date', values['Start Date'], 6);
+        setFinanceBasementValue('Offered', values['GROSS'], 14);
+        setFinanceBasementValue('Project End Date', projectEndDate || '', 0);
+        setFinanceBasementValue('Carried-over', 0, 24);
+        setFinanceBasementValue('Used Before', 0, 27);
+
+        setRowValues(sheet, lastRow, financeBasementValues);
 
         format4LastRow(sheet, lastRow);
       } catch (err) {
@@ -354,7 +374,8 @@ function onFormSubmit(e) {
       sheet = spreadsheet.getSheetByName('Contracts');
       removeFiltersIfAny(sheet);
 
-      lastRow = emptyRowsDel(sheet, 1);
+      const agreementsHeaderProfile = HEADER_PROFILES.AGREEMENTS;
+      lastRow = emptyRowsDel(sheet, 1, {headerProfile: agreementsHeaderProfile});
       const startDate = values['Start Date'] ? new Date(values['Start Date']) : '';
       const grossDivisors = {
         'PL: JDG': 145,
@@ -370,26 +391,30 @@ function onFormSubmit(e) {
         recordProcessingError(processingErrors, "Agreements currency", new Error("Currency is missing or invalid."));
       }
 
-      const agreementValues = {
-        1: personID,
-        2: 'in progress',
-        3: `${values['First Name'] || ''} ${values['Last Name'] || ''}`.trim(),
-        4: values['Project'] || '',
-        5: values['Role'] || '',
-        6: 'Service Start',
-        7: countryCode,
-        11: startDate,
-        18: values['GROSS'],
-        19: rate,
-        42: 'Full Name by Local Passport',
-        54: 'Official Address',
-        56: 'Individual Tax #',
-        62: 'Private Email'
-      };
+      const agreementValues = {};
+      const setAgreementValue = createHeaderValueSetter(sheet, agreementValues, agreementsHeaderProfile);
+      setAgreementValue('Person ID', personID, 1);
+      setAgreementValue('Status', 'in progress', 2);
+      setAgreementValue('Contractor Name', `${values['First Name'] || ''} ${values['Last Name'] || ''}`.trim(), 3);
+      setAgreementValue('Project', values['Project'] || '', 4);
+      setAgreementValue('Role', values['Role'] || '', 5);
+      setAgreementValue('Purpose', 'Service Start', 6);
+      setAgreementValue('Country Code', countryCode, 7);
+      setAgreementValue('Effective DT', startDate, 11);
+      setAgreementValue('Compensation Monthly Agreed', values['GROSS'], 18);
+      setAgreementValue('Rate Offered', rate, 19);
+      setAgreementValue('Contractor Legal Name Local', values['Legal Name']);
+      setAgreementValue('Contractor Address Local', values['Official Address']);
+      setAgreementValue('Contractor Tax ID (NIP/INN/PAN)', values['Individual Tax #']);
+      setAgreementValue('Contractor REGON', values['Regon']);
+      setAgreementValue('Contractor SWIFT', values['SWIFT Code']);
+      setAgreementValue('Contractor IBAN', values['Bank USD Account #']);
+      setAgreementValue('Contractor Email', values['Private Email']);
 
       if (agreementCurrency) {
-        agreementValues[26] = agreementCurrency;
+        setAgreementValue('Document Currency', agreementCurrency, 26);
       }
+      setAgreementValue('Expiry DT', projectEndDate || '', 0);
 
       setRowValues(sheet, lastRow, agreementValues);
    
@@ -428,8 +453,16 @@ function onFormSubmit(e) {
         sheet = spreadsheet.getSheetByName('List');
         removeFiltersIfAny(sheet);
 
-        lastRow = emptyRowsDel(sheet, 1);
-        setRowValues(sheet, lastRow, {1: personID});
+        const memberHeaderProfile = HEADER_PROFILES.COWORKING_MEMBER_REGISTER;
+        lastRow = emptyRowsDel(sheet, 1, {headerProfile: memberHeaderProfile});
+        const memberValues = {};
+        const setMemberValue = createHeaderValueSetter(sheet, memberValues, memberHeaderProfile);
+        setMemberValue('Person ID', personID, 1);
+        setMemberValue('Member Name', values['Legal Name'] || values['Full Name by Local Passport']);
+        setMemberValue('Member Address', values['Official Address']);
+        setMemberValue('Member PESEL / NIP', values['Individual Tax #']);
+
+        setRowValues(sheet, lastRow, memberValues);
         sheet.getRange(lastRow, 2).clear();
 
         format4LastRow(sheet, lastRow);
@@ -443,15 +476,14 @@ function onFormSubmit(e) {
         sheet = spreadsheet.getSheetByName('List');
         removeFiltersIfAny(sheet);
 
-        lastRow = emptyRowsDel(sheet, 5);
+        const residentNameColumn = getColumnByHeader(sheet, 'RESIDENT NAME', 5);
+        lastRow = findFirstEmptyRowInColumn(sheet, residentNameColumn);
         setRowValues(sheet, lastRow, {
           1: personID,
-          5: values['First Name'],
-          6: String(values['Last Name'] || '').toUpperCase(),
+          [residentNameColumn]: values['First Name'],
+          [residentNameColumn + 1]: String(values['Last Name'] || '').toUpperCase(),
           8: 'Pending'
         });
-
-        format4LastRow(sheet, lastRow);
       } catch (err) {
         recordProcessingError(processingErrors, "Resident Badge Register", err);
       }
@@ -670,6 +702,129 @@ function getFinanceBasementRole(role) {
 }
 
 /**
+ * Calculates the project end date from a start date and project term.
+ *
+ * @param {string|Date} startDateValue Project start date.
+ * @param {string} projectTerm Project term submitted from the form.
+ * @return {?Date} Project end date, or null when inputs are invalid.
+ */
+function getProjectEndDate(startDateValue, projectTerm) {
+  const startDate = parseDateValue(startDateValue);
+  if (!startDate) return null;
+
+  const normalizedTerm = String(projectTerm || '').trim().toLowerCase();
+  if (normalizedTerm === 'until year-end') {
+    return new Date(startDate.getFullYear(), 11, 31);
+  }
+
+  if (normalizedTerm === '1 year') {
+    if (startDate.getDate() === 1) {
+      return addMonthsAndSubtractOneDay(startDate, 12);
+    }
+
+    const annualEndMonthDate = addMonthsClamped(startDate, 12);
+    if (isWithinDaysBeforeMonthEnd(startDate, 7)) {
+      return getLastDayOfNextMonth(annualEndMonthDate);
+    }
+
+    return getLastDayOfMonth(annualEndMonthDate);
+  }
+
+  const monthTerms = {
+    '1 month': 1,
+    '2 months': 2,
+    '3 months': 3,
+    '6 months': 6,
+    '9 months': 9,
+    '2 years': 24
+  };
+  const months = monthTerms[normalizedTerm];
+  return months ? addMonthsAndSubtractOneDay(startDate, months) : null;
+}
+
+/**
+ * Parses a form date value.
+ *
+ * @param {string|Date} value Date value.
+ * @return {?Date} Parsed date, or null when invalid.
+ */
+function parseDateValue(value) {
+  if (!value) return null;
+  const date = value instanceof Date ? new Date(value.getTime()) : new Date(value);
+  return isNaN(date.getTime()) ? null : clearTime(date);
+}
+
+/**
+ * Adds months to a date and subtracts one day from the result.
+ *
+ * @param {Date} date Source date.
+ * @param {number} months Number of months to add.
+ * @return {Date} Calculated end date.
+ */
+function addMonthsAndSubtractOneDay(date, months) {
+  const result = addMonthsClamped(date, months);
+  result.setDate(result.getDate() - 1);
+  return result;
+}
+
+/**
+ * Adds months while clamping the day to the target month's last day.
+ *
+ * @param {Date} date Source date.
+ * @param {number} months Number of months to add.
+ * @return {Date} Date in the target month.
+ */
+function addMonthsClamped(date, months) {
+  const year = date.getFullYear();
+  const month = date.getMonth() + months;
+  const day = date.getDate();
+  const lastTargetDay = new Date(year, month + 1, 0).getDate();
+  return new Date(year, month, Math.min(day, lastTargetDay));
+}
+
+/**
+ * Gets the last day of the month for a date.
+ *
+ * @param {Date} date Date inside the target month.
+ * @return {Date} Last day of the date's month.
+ */
+function getLastDayOfMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0);
+}
+
+/**
+ * Gets the last day of the month after the date's month.
+ *
+ * @param {Date} date Date inside the reference month.
+ * @return {Date} Last day of the next month.
+ */
+function getLastDayOfNextMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth() + 2, 0);
+}
+
+/**
+ * Checks whether a date is within the given number of days before month end, inclusive.
+ *
+ * @param {Date} date Date to check.
+ * @param {number} days Number of final month days to include.
+ * @return {boolean} True when the date is close to month end.
+ */
+function isWithinDaysBeforeMonthEnd(date, days) {
+  const lastDay = getLastDayOfMonth(date).getDate();
+  return lastDay - date.getDate() + 1 <= days;
+}
+
+/**
+ * Clears time fields from a date.
+ *
+ * @param {Date} date Date to normalize.
+ * @return {Date} Date at local midnight.
+ */
+function clearTime(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+/**
  * Finds the first row that contains the given text in a column range.
  *
  * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet Sheet to search.
@@ -692,6 +847,306 @@ function findRowContainingText(sheet, text, startColumn, endColumn) {
   }
 
   return 0;
+}
+
+/**
+ * Finds a column by header text in the detected header row.
+ *
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet Sheet to inspect.
+ * @param {string} headerText Header text to find.
+ * @param {number} fallbackColumn One-based column returned when the header is not found.
+ * @param {string[]=} headerProfile Required headers used to detect the correct header row.
+ * @return {number} Matching one-based column number.
+ */
+function getColumnByHeader(sheet, headerText, fallbackColumn, headerProfile) {
+  const headerInfo = getHeaderInfo(sheet, headerProfile);
+  return getColumnFromHeaderInfo(sheet, headerInfo, headerText, fallbackColumn);
+}
+
+/**
+ * Finds the most likely header row in the first top rows.
+ *
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet Sheet to inspect.
+ * @param {string[]=} headerProfile Required headers used to detect the correct header row.
+ * @return {number} One-based header row number, or 0 when not found.
+ */
+function findHeaderRow(sheet, headerProfile) {
+  const rowsToScan = Math.min(10, sheet.getLastRow());
+  const lastColumn = sheet.getLastColumn();
+  if (!rowsToScan || !lastColumn) return 0;
+
+  const values = sheet.getRange(1, 1, rowsToScan, lastColumn).getValues();
+  const candidates = values.map((row, index) => ({
+    rowNumber: index + 1,
+    values: row,
+    filledCells: countFilledCells(row)
+  })).sort((first, second) => {
+    if (second.filledCells !== first.filledCells) {
+      return second.filledCells - first.filledCells;
+    }
+    return first.rowNumber - second.rowNumber;
+  });
+
+  if (headerProfile && headerProfile.length) {
+    for (let i = 0; i < candidates.length; i++) {
+      if (hasHeaderProfile(candidates[i].values, headerProfile)) {
+        return candidates[i].rowNumber;
+      }
+    }
+  }
+
+  for (let i = 0; i < candidates.length; i++) {
+    if (hasHeaderAnchor(candidates[i].values)) {
+      return candidates[i].rowNumber;
+    }
+  }
+
+  return 0;
+}
+
+/**
+ * Gets detected header row metadata and a normalized header-to-column map.
+ *
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet Sheet to inspect.
+ * @param {string[]=} headerProfile Required headers used to detect the correct header row.
+ * @return {Object} Header metadata with row number and column map.
+ */
+function getHeaderInfo(sheet, headerProfile) {
+  const headerRow = findHeaderRow(sheet, headerProfile);
+  if (!headerRow) {
+    logMissingHeaderRow(sheet, headerProfile);
+    return {
+      row: 0,
+      columnsByHeader: {}
+    };
+  }
+
+  const headers = sheet.getRange(headerRow, 1, 1, sheet.getLastColumn()).getValues()[0];
+  return {
+    row: headerRow,
+    columnsByHeader: buildHeaderColumnMap(headers)
+  };
+}
+
+/**
+ * Builds a map from normalized header text to one-based column number.
+ *
+ * @param {*[]} headers Header row values.
+ * @return {Object.<string, number>} Header-to-column map.
+ */
+function buildHeaderColumnMap(headers) {
+  return headers.reduce((result, header, index) => {
+    const normalizedHeader = normalizeHeaderText(header);
+    if (normalizedHeader && !result[normalizedHeader]) {
+      result[normalizedHeader] = index + 1;
+    }
+    return result;
+  }, {});
+}
+
+/**
+ * Finds a column in preloaded header metadata.
+ *
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet Sheet being written.
+ * @param {Object} headerInfo Header metadata from getHeaderInfo().
+ * @param {string} headerText Header text to find.
+ * @param {number} fallbackColumn One-based column returned when the header is not found.
+ * @return {number} Matching one-based column number.
+ */
+function getColumnFromHeaderInfo(sheet, headerInfo, headerText, fallbackColumn) {
+  if (!headerInfo.row) return fallbackColumn;
+
+  const expectedHeaders = getHeaderAliases(headerText);
+  for (let i = 0; i < expectedHeaders.length; i++) {
+    const column = headerInfo.columnsByHeader[expectedHeaders[i]];
+    if (column) return column;
+  }
+
+  logMissingHeaderColumn(sheet, headerText, fallbackColumn);
+  return fallbackColumn;
+}
+
+/**
+ * Counts non-empty cells in a row.
+ *
+ * @param {*[]} row Row values.
+ * @return {number} Number of filled cells.
+ */
+function countFilledCells(row) {
+  return row.filter(value => normalizeHeaderText(value) !== '').length;
+}
+
+/**
+ * Checks whether a row contains all headers from a required profile.
+ *
+ * @param {*[]} row Row values.
+ * @param {string[]} headerProfile Required headers.
+ * @return {boolean} True when all profile headers are present.
+ */
+function hasHeaderProfile(row, headerProfile) {
+  const normalizedHeaders = row.map(normalizeHeaderText);
+  return headerProfile.every(headerText => {
+    return getHeaderAliases(headerText).some(alias => normalizedHeaders.includes(alias));
+  });
+}
+
+/**
+ * Checks whether a row contains a generic ID header anchor.
+ *
+ * @param {*[]} row Row values.
+ * @return {boolean} True when the row contains Person ID or Force ID.
+ */
+function hasHeaderAnchor(row) {
+  return hasHeaderProfile(row, ['Person ID']) || hasHeaderProfile(row, ['Force ID']);
+}
+
+/**
+ * Logs a missing header row warning once per sheet during one execution.
+ *
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet Sheet where the header row was not found.
+ * @param {string[]=} headerProfile Required headers used for matching.
+ * @return {void}
+ */
+function logMissingHeaderRow(sheet, headerProfile) {
+  const spreadsheetName = sheet.getParent().getName();
+  const sheetName = sheet.getName();
+  const expectedHeaders = headerProfile && headerProfile.length
+    ? headerProfile.join(', ')
+    : 'Person ID, Force ID, P ID, F ID';
+  const logKey = `${spreadsheetName}::${sheetName}::${expectedHeaders}`;
+
+  if (!logMissingHeaderRow.loggedSheets) {
+    logMissingHeaderRow.loggedSheets = {};
+  }
+  if (logMissingHeaderRow.loggedSheets[logKey]) return;
+
+  Logger.log(
+    `Header row was not found in "${spreadsheetName}" / "${sheetName}". ` +
+    `Expected headers: ${expectedHeaders}. Fallback columns will be used where available.`
+  );
+  logMissingHeaderRow.loggedSheets[logKey] = true;
+}
+
+/**
+ * Logs a missing header column warning once per sheet and header during one execution.
+ *
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet Sheet where the header was not found.
+ * @param {string} headerText Expected header text.
+ * @param {number} fallbackColumn Fallback column used when the header is missing.
+ * @return {void}
+ */
+function logMissingHeaderColumn(sheet, headerText, fallbackColumn) {
+  const spreadsheetName = sheet.getParent().getName();
+  const sheetName = sheet.getName();
+  const fallbackMessage = fallbackColumn
+    ? `Fallback column ${fallbackColumn} will be used.`
+    : 'No fallback column is configured, so this value will not be written.';
+  const logKey = `${spreadsheetName}::${sheetName}::${normalizeHeaderText(headerText)}`;
+
+  if (!logMissingHeaderColumn.loggedHeaders) {
+    logMissingHeaderColumn.loggedHeaders = {};
+  }
+  if (logMissingHeaderColumn.loggedHeaders[logKey]) return;
+
+  Logger.log(
+    `Header "${headerText}" was not found in "${spreadsheetName}" / "${sheetName}". ` +
+    fallbackMessage
+  );
+  logMissingHeaderColumn.loggedHeaders[logKey] = true;
+}
+
+/**
+ * Gets normalized aliases for a header.
+ *
+ * @param {string} headerText Source header text.
+ * @return {string[]} Header aliases.
+ */
+function getHeaderAliases(headerText) {
+  const normalizedHeader = normalizeHeaderText(headerText);
+  const aliases = {
+    'person id': ['person id', 'p id'],
+    'force id': ['force id', 'f id']
+  };
+
+  return aliases[normalizedHeader] || [normalizedHeader];
+}
+
+/**
+ * Creates a header-based row value setter bound to a sheet and header profile.
+ *
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet Sheet where values will be written.
+ * @param {Object.<number, *>} columnValues Row values keyed by one-based column number.
+ * @param {string[]} headerProfile Required headers used to detect the correct header row.
+ * @return {Function} Setter accepting header text, value, and optional fallback column.
+ */
+function createHeaderValueSetter(sheet, columnValues, headerProfile) {
+  const headerInfo = getHeaderInfo(sheet, headerProfile);
+  return function(headerText, value, fallbackColumn) {
+    const column = getColumnFromHeaderInfo(sheet, headerInfo, headerText, fallbackColumn || 0);
+    if (column) {
+      columnValues[column] = value;
+    }
+  };
+}
+
+/**
+ * Adds a row value by finding the destination column by its header text.
+ *
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet Sheet where the value will be written.
+ * @param {Object.<number, *>} columnValues Row values keyed by one-based column number.
+ * @param {string} headerText Header text that identifies the destination column.
+ * @param {*} value Value to write when the header exists.
+ * @param {number} [fallbackColumn] One-based column used when the header is not found.
+ * @param {string[]=} headerProfile Required headers used to detect the correct header row.
+ * @return {void}
+ */
+function setValueByHeader(sheet, columnValues, headerText, value, fallbackColumn, headerProfile) {
+  const column = getColumnByHeader(sheet, headerText, fallbackColumn || 0, headerProfile);
+  if (column) {
+    columnValues[column] = value;
+  }
+}
+
+/**
+ * Finds the first empty cell row in a column after the detected header row.
+ *
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet Sheet to inspect.
+ * @param {number} column One-based column to scan.
+ * @return {number} First one-based row number with no value or formula in the column.
+ */
+function findFirstEmptyRowInColumn(sheet, column) {
+  const headerRow = findHeaderRow(sheet);
+  const firstDataRow = Math.max((headerRow || 1) + 1, 2);
+  const maxRows = sheet.getMaxRows();
+
+  if (maxRows < firstDataRow) {
+    sheet.insertRowsAfter(maxRows, firstDataRow - maxRows);
+    return firstDataRow;
+  }
+
+  const rowCount = maxRows - firstDataRow + 1;
+  const range = sheet.getRange(firstDataRow, column, rowCount, 1);
+  const values = range.getValues();
+  const formulas = range.getFormulas();
+
+  for (let rowIndex = 0; rowIndex < values.length; rowIndex++) {
+    if (values[rowIndex][0] === '' && formulas[rowIndex][0] === '') {
+      return firstDataRow + rowIndex;
+    }
+  }
+
+  sheet.insertRowAfter(maxRows);
+  return maxRows + 1;
+}
+
+/**
+ * Normalizes header text for reliable comparisons.
+ *
+ * @param {*} value Header value.
+ * @return {string} Normalized header text.
+ */
+function normalizeHeaderText(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
 /**
@@ -890,22 +1345,33 @@ function setRowValues(sheet, row, columnValues) {
   if (!columns.length) return;
 
   let startColumn = columns[0];
-  let values = [columnValues[startColumn]];
+  let values = [normalizeValueForWrite(columnValues[startColumn])];
   let previousColumn = startColumn;
 
   for (let i = 1; i < columns.length; i++) {
     const column = columns[i];
     if (column === previousColumn + 1) {
-      values.push(columnValues[column]);
+      values.push(normalizeValueForWrite(columnValues[column]));
     } else {
       sheet.getRange(row, startColumn, 1, values.length).setValues([values]);
       startColumn = column;
-      values = [columnValues[column]];
+      values = [normalizeValueForWrite(columnValues[column])];
     }
     previousColumn = column;
   }
 
   sheet.getRange(row, startColumn, 1, values.length).setValues([values]);
+}
+
+/**
+ * Normalizes text values before writing to spreadsheets.
+ *
+ * @param {*} value Value to normalize.
+ * @return {*} Normalized text value, or the original non-text value.
+ */
+function normalizeValueForWrite(value) {
+  if (typeof value !== 'string') return value;
+  return value.replace(/\s+/g, ' ').trim();
 }
 
 /**

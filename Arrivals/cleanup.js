@@ -67,7 +67,8 @@ function collectArrivalForceIDs(personID) {
       spreadsheetId: CONFIG.FORCES_PROJECTS_SPREADSHEET_ID,
       sheetName: 'AllData',
       matchColumn: 1,
-      valueColumn: 2
+      valueColumn: 2,
+      headerProfile: HEADER_PROFILES.FORCES_PROJECTS
     }, personID))
     .concat(findLinkedValues({
       spreadsheetId: CONFIG.LEAVE_TRACKER_SPREADSHEET_ID,
@@ -86,8 +87,8 @@ function collectArrivalForceIDs(personID) {
  */
 function getPersonCleanupTargets() {
   return [
-    {name: 'WorkForce', spreadsheetId: CONFIG.WORKFORCE_SPREADSHEET_ID, sheetName: 'Registry', matchColumn: 2},
-    {name: 'Forces-Projects', spreadsheetId: CONFIG.FORCES_PROJECTS_SPREADSHEET_ID, sheetName: 'AllData', matchColumn: 1},
+    {name: 'WorkForce', spreadsheetId: CONFIG.WORKFORCE_SPREADSHEET_ID, sheetName: 'Registry', matchColumn: 2, headerProfile: HEADER_PROFILES.WORKFORCE},
+    {name: 'Forces-Projects', spreadsheetId: CONFIG.FORCES_PROJECTS_SPREADSHEET_ID, sheetName: 'AllData', matchColumn: 1, headerProfile: HEADER_PROFILES.FORCES_PROJECTS},
     {name: 'Forces-Personals', spreadsheetId: CONFIG.FORCES_PERSONALS_SPREADSHEET_ID, sheetName: 'AllData', matchColumn: 1},
     {name: 'Forces-Locations', spreadsheetId: CONFIG.FORCES_LOCATIONS_SPREADSHEET_ID, sheetName: 'AllData', matchColumn: 1},
     {name: 'Forces-CorpContacts', spreadsheetId: CONFIG.FORCES_CORP_CONTACTS_SPREADSHEET_ID, sheetName: 'AllData', matchColumn: 1},
@@ -96,8 +97,8 @@ function getPersonCleanupTargets() {
     {name: 'Forces-BackgroundChecks', spreadsheetId: CONFIG.FORCES_BACKGROUND_CHECKS_SPREADSHEET_ID, sheetName: 'Records', matchColumn: 1},
     {name: 'Forces-Legal', spreadsheetId: CONFIG.FORCES_LEGAL_SPREADSHEET_ID, sheetName: 'AllData', matchColumn: 1},
     {name: 'Forces-Finance', spreadsheetId: CONFIG.FORCES_FINANCE_SPREADSHEET_ID, sheetName: 'AllData', matchColumn: 1},
-    {name: 'Finance Basement | PL', spreadsheetId: CONFIG.FINANCE_BASEMENT_PL_SPREADSHEET_ID, sheetName: 'Finance', matchColumn: 1},
-    {name: 'Agreements', spreadsheetId: CONFIG.AGREEMENTS_SPREADSHEET_ID, sheetName: 'Contracts', matchColumn: 1}
+    {name: 'Finance Basement | PL', spreadsheetId: CONFIG.FINANCE_BASEMENT_PL_SPREADSHEET_ID, sheetName: 'Finance', matchColumn: 1, headerProfile: HEADER_PROFILES.FINANCE_BASEMENT_PL},
+    {name: 'Agreements', spreadsheetId: CONFIG.AGREEMENTS_SPREADSHEET_ID, sheetName: 'Contracts', matchColumn: 1, headerProfile: HEADER_PROFILES.AGREEMENTS}
   ];
 }
 
@@ -135,7 +136,8 @@ function getCoworkingCleanupTargets() {
       name: `${integration.displayName} member register`,
       spreadsheetId: integration.memberRegisterSpreadsheetId,
       sheetName: 'List',
-      matchColumn: 1
+      matchColumn: 1,
+      headerProfile: HEADER_PROFILES.COWORKING_MEMBER_REGISTER
     });
     targets.push({
       name: `${integration.displayName} resident badge register`,
@@ -168,7 +170,7 @@ function findLinkedValues(target, matchValue) {
   const sheet = SpreadsheetApp.openById(target.spreadsheetId).getSheetByName(target.sheetName);
   if (!sheet) return [];
 
-  const firstDataRow = getCleanupFirstDataRow(sheet);
+  const firstDataRow = getCleanupFirstDataRow(sheet, target.headerProfile);
   const lastRow = sheet.getLastRow();
   if (lastRow < firstDataRow) return [];
 
@@ -202,7 +204,7 @@ function deleteMatchingRows(target, matchValue) {
   }
 
   removeFiltersIfAny(sheet);
-  const deletedRows = deleteRowsByColumnValue(sheet, target.matchColumn, matchValue);
+  const deletedRows = deleteRowsByColumnValue(sheet, target.matchColumn, matchValue, target.headerProfile);
   return {target: target.name, sheetName: target.sheetName, deletedRows: deletedRows};
 }
 
@@ -222,7 +224,7 @@ function deleteMatchingRowsFromAllSheets(target, matchValue) {
     removeFiltersIfAny(sheet);
     return {
       sheetName: sheet.getName(),
-      deletedRows: deleteRowsByColumnValue(sheet, target.matchColumn, matchValue)
+      deletedRows: deleteRowsByColumnValue(sheet, target.matchColumn, matchValue, target.headerProfile)
     };
   });
 
@@ -235,10 +237,11 @@ function deleteMatchingRowsFromAllSheets(target, matchValue) {
  * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet Sheet to clean.
  * @param {number} matchColumn One-based column to match.
  * @param {string} matchValue Target ID to match.
+ * @param {string[]=} headerProfile Required headers used to detect the correct header row.
  * @return {number[]} Deleted one-based row numbers.
  */
-function deleteRowsByColumnValue(sheet, matchColumn, matchValue) {
-  const firstDataRow = getCleanupFirstDataRow(sheet);
+function deleteRowsByColumnValue(sheet, matchColumn, matchValue, headerProfile) {
+  const firstDataRow = getCleanupFirstDataRow(sheet, headerProfile);
   const lastRow = sheet.getLastRow();
   if (lastRow < firstDataRow) return [];
 
@@ -258,10 +261,15 @@ function deleteRowsByColumnValue(sheet, matchColumn, matchValue) {
  * Gets the first data row while protecting header rows from deletion.
  *
  * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet Sheet to inspect.
+ * @param {string[]=} headerProfile Required headers used to detect the correct header row.
  * @return {number} First one-based data row.
  */
-function getCleanupFirstDataRow(sheet) {
-  return Math.max(sheet.getFrozenRows() + 1, 2);
+function getCleanupFirstDataRow(sheet, headerProfile) {
+  const headerRow = findHeaderRow(sheet, headerProfile);
+  if (!headerRow && typeof logMissingHeaderRow === 'function') {
+    logMissingHeaderRow(sheet, headerProfile);
+  }
+  return Math.max((headerRow || 1) + 1, 2);
 }
 
 /**

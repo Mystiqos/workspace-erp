@@ -4,13 +4,22 @@
  *
  * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet Sheet where the new row should be created.
  * @param {number} controlColumn One-based column number used as the primary key column.
+ * @param {Object=} options Optional insertion settings.
+ * @param {number[]=} options.ignoredColumns One-based columns ignored during full-row content detection.
+ * @param {string[]=} options.headerProfile Required headers used to detect the correct header row.
  * @return {number} Inserted row number.
  */
-function emptyRowsDel(sheet, controlColumn) {
+function emptyRowsDel(sheet, controlColumn, options) {
+  const settings = options || {};
+  const ignoredColumns = settings.ignoredColumns || [];
   const maxRows = sheet.getMaxRows();
-  const frozenRows = sheet.getFrozenRows();
-  const firstDataRow = frozenRows + 1;
+  const headerRow = findHeaderRow(sheet, settings.headerProfile);
+  const firstDataRow = Math.max((headerRow || 1) + 1, 2);
   const lastColumn = sheet.getLastColumn();
+
+  if (!headerRow && typeof logMissingHeaderRow === 'function') {
+    logMissingHeaderRow(sheet, settings.headerProfile);
+  }
 
   if (maxRows < firstDataRow) {
     sheet.insertRowsAfter(maxRows, firstDataRow - maxRows);
@@ -23,11 +32,13 @@ function emptyRowsDel(sheet, controlColumn) {
   const rowRange = sheet.getRange(firstDataRow, 1, scanRowCount, lastColumn);
   const rowValues = rowRange.getValues();
   const rowFormulas = rowRange.getFormulas();
+  const filteredRowValues = ignoreColumns(rowValues, ignoredColumns);
+  const filteredRowFormulas = ignoreColumns(rowFormulas, ignoredColumns);
 
   const lastControlRow = getLastFilledRow(controlValues, controlFormulas, firstDataRow);
-  const lastContentRow = getLastFilledRow(rowValues, rowFormulas, firstDataRow);
+  const lastContentRow = getLastFilledRow(filteredRowValues, filteredRowFormulas, firstDataRow);
   const hasDataRows = lastControlRow >= firstDataRow || lastContentRow >= firstDataRow;
-  const insertAfterRow = hasDataRows ? Math.max(lastControlRow, lastContentRow) : Math.max(frozenRows, 1);
+  const insertAfterRow = hasDataRows ? Math.max(lastControlRow, lastContentRow) : firstDataRow - 1;
 
   const firstDeleteRow = hasDataRows ? insertAfterRow + 1 : firstDataRow + 1;
   const deleteCount = sheet.getMaxRows() - firstDeleteRow + 1;
@@ -38,6 +49,19 @@ function emptyRowsDel(sheet, controlColumn) {
   sheet.insertRowAfter(insertAfterRow);
 
   return insertAfterRow + 1;
+}
+
+/**
+ * Removes ignored columns from range rows.
+ *
+ * @param {*[][]} rows Range rows.
+ * @param {number[]} ignoredColumns One-based columns to ignore.
+ * @return {*[][]} Rows without ignored columns.
+ */
+function ignoreColumns(rows, ignoredColumns) {
+  if (!ignoredColumns.length) return rows;
+
+  return rows.map(row => row.filter((_, index) => !ignoredColumns.includes(index + 1)));
 }
 
 /**
