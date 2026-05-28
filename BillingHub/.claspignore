@@ -1,0 +1,23 @@
+# Git / IDE
+.git/**
+.vscode/**
+.idea/**
+
+# Local files
+.env
+*.log
+.DS_Store
+
+# Docs / temp
+README.md
+notes/**
+tmp/**
+
+# Node deps if є
+node_modules/**
+package.json
+package-lock.json
+
+# Clasp service files, зазвичай не треба пушити
+.clasp.json
+.claspignore

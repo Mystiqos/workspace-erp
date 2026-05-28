@@ -1,0 +1,17 @@
+# Local clasp binding
+.clasp*.json
+
+# Local/private config
+.env
+.env.local
+config.local.js
+config*.local.js
+
+# Dependencies
+node_modules/
+
+# System files
+.DS_Store
+
+# Logs
+*.log
